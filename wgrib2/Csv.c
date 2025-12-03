@@ -171,13 +171,32 @@ int f_csv(ARG1) {
     /* Write data to CSV file */
 
     if (WxNum > 0) {
+        struct pair { char label[200]; double value; };
+        struct pair *unique = malloc(ndata * sizeof(struct pair));
+        int n_unique = 0;
+
         for (j = 0; j < ndata; j++) {
             if (!UNDEFINED_VAL(data[j]) && data[j] > 0) {
-                i = j / nx;  /* row index */
-                k = j % nx;  /* column index */
-                fprintf(out, "%u,%u,\"%s\"\n", i, k, WxLabel(data[j]));
+                const char *lbl = WxLabel(data[j]);
+                int found = 0;
+                for (int p = 0; p < n_unique; p++) {
+                    if (unique[p].value == data[j]) {  // cùng value → cùng label
+                        found = 1; break;
+                    }
+                }
+                if (!found) {
+                    strncpy(unique[n_unique].label, lbl, 199);
+                    unique[n_unique].label[199] = 0;
+                    unique[n_unique].value = data[j];
+                    n_unique++;
+                }
             }
         }
+
+        for (int p = 0; p < n_unique; p++) {
+            fprintf(out, "\"%s\",%.10g\n", unique[p].label, unique[p].value);
+        }
+        free(unique);
     }
     else {
         for (j = 0; j < ndata; j++) {
